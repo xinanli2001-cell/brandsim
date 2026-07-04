@@ -1,36 +1,44 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MarketingSim
 
-## Getting Started
+A social media simulation app for marketing education. Students act as brand managers, post content, and iterate across rounds using a hybrid AI evaluation engine (deterministic rules + an LLM-scored content quality coefficient). Teachers create challenges, get a join code, and monitor class progress in real time.
 
-First, run the development server:
+## Stack
+
+Next.js (App Router) full-stack + Prisma (SQLite locally, Postgres-ready) + OpenAI (optional, falls back to a deterministic stub) + Recharts.
+
+## Getting started
 
 ```bash
+npm install          # also runs `prisma generate` via postinstall
+npm run db:migrate    # apply migrations, create the local SQLite database
+npm run db:seed       # seed the built-in "GreenKnit" challenge (join code GREEN1)
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000/join (student) or http://localhost:3000/teacher (teacher — sign up, or log in with the seeded account `teacher@example.com` / `password123`).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Optional: put `OPENAI_API_KEY` (and optionally `OPENAI_MODEL`, default `gpt-4o-mini`) in `.env.local` to use real LLM scoring instead of the deterministic stub — everything works without it.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Key docs
 
-## Learn More
+- [`../docs/data-contract.md`](../docs/data-contract.md) — the data contract / evaluation engine design (source of truth for all API shapes)
+- [`../docs/deployment.md`](../docs/deployment.md) — how to deploy to Vercel + Neon Postgres
 
-To learn more about Next.js, take a look at the following resources:
+## Project structure
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- `lib/engine/` — evaluation engine: seeded deterministic rules (`deterministic.ts`), LLM layer with stub fallback (`llm.ts`), orchestration (`evaluate.ts`)
+- `lib/data/challenge.ts` — built-in challenge + influencer pool
+- `lib/auth/session.ts` — teacher session cookie helpers (signup/login/logout/current-teacher)
+- `lib/moderation.ts` — keyword-based content filter for student posts
+- `app/api/` — route handlers (auth, join, rounds, game state, leaderboard, challenges CRUD)
+- `app/join`, `app/play/*` — student flow
+- `app/teacher/login`, `app/teacher/*` — teacher flow (sign up/log in, create challenge, live class monitor)
+- `scripts/test-engine.ts`, `scripts/test-flow.ts`, `scripts/test-race.ts` — reproducibility, end-to-end, and concurrency regression checks (run with `npx tsx`)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Scripts
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `npm run dev` / `npm run build` / `npm run start`
+- `npm run lint`
+- `npm run db:migrate` — create/apply a migration locally (dev)
+- `npm run db:deploy` — apply existing migrations without prompting (CI/production)
+- `npm run db:seed` — seed the built-in challenge

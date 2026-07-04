@@ -1,0 +1,80 @@
+// Day2: SQLite 起步（零配置）。Day5 部署前把 provider 换 "postgresql"，
+// DATABASE_URL 指向 Neon，跑一次 `prisma migrate deploy` 即可迁移，业务代码不用改。
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Teacher {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+
+  sessions   Session[]
+  challenges Challenge[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  teacherId String
+  teacher   Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model Challenge {
+  id                 String   @id @default(cuid())
+  teacherId          String
+  teacher            Teacher  @relation(fields: [teacherId], references: [id])
+  status             String   @default("active") // active | paused | ended
+  brandName          String
+  brandBackground    String
+  goal               String
+  targetAudience     Json
+  seasonalContext    String
+  followerBase       Int
+  totalRounds        Int
+  startingTokens     Int
+  difficulty         String
+  availableActions   Json
+  leaderboardEnabled Boolean
+  joinCode           String   @unique
+  createdAt          DateTime @default(now())
+
+  groups Group[]
+}
+
+model Group {
+  id           String   @id @default(cuid())
+  challengeId  String
+  challenge    Challenge @relation(fields: [challengeId], references: [id])
+  groupName    String
+  tokenBalance Int
+  currentRound Int      @default(1)
+  status       String   @default("in_progress") // in_progress | finished
+  finalScore   Int?
+  createdAt    DateTime @default(now())
+
+  rounds Round[]
+
+  @@unique([challengeId, groupName])
+}
+
+model Round {
+  id        String   @id @default(cuid())
+  groupId   String
+  group     Group    @relation(fields: [groupId], references: [id])
+  round     Int
+  post      Json
+  actions   Json
+  result    Json
+  createdAt DateTime @default(now())
+
+  @@unique([groupId, round])
+}
