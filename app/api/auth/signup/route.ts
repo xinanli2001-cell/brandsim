@@ -26,13 +26,13 @@ export async function POST(request: Request) {
   }
 
   const email = parsed.data.email.toLowerCase().trim();
-  const existing = await prisma.teacher.findUnique({ where: { email } });
+  const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
     return NextResponse.json({ error: "An account with this email already exists" }, { status: 409 });
   }
 
   const passwordHash = await bcrypt.hash(parsed.data.password, 10);
-  const teacher = await prisma.teacher.create({ data: { email, passwordHash } });
+  const teacher = await prisma.user.create({ data: { email, passwordHash } });
   await createSession(teacher.id);
 
   return NextResponse.json({ teacher: { id: teacher.id, email: teacher.email } });
