@@ -89,7 +89,7 @@ export default function EvalDashboardPage() {
                   <YAxis domain={[0, 1]} />
                   <Tooltip />
                   <Legend />
-                  <Bar dataKey="NDCG" fill="#006e2f" />
+                  <Bar dataKey="NDCG" name="NDCG@10" fill="#006e2f" />
                   <Bar dataKey="MRR" fill="#006591" />
                   <Bar dataKey="Precision@5" fill="#9e4036" />
                 </BarChart>
@@ -126,7 +126,7 @@ export default function EvalDashboardPage() {
                     <th className="py-1">Query</th>
                     <th className="py-1">Strategy</th>
                     <th className="py-1">Reason</th>
-                    <th className="py-1">NDCG</th>
+                    <th className="py-1">NDCG@10</th>
                     <th className="py-1">P@5</th>
                   </tr>
                 </thead>
