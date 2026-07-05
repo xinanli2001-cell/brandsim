@@ -11,6 +11,7 @@ import { checkContent } from "@/lib/moderation";
 import { getCurrentUser } from "@/lib/auth/session";
 import { assertUser, AuthError } from "@/lib/auth/guards";
 import { normalizeHashtag } from "@/lib/hashtag";
+import { buildSearchText } from "@/lib/search/searchText";
 import type { EvaluationRequest, EvaluationResult } from "@/lib/types";
 
 const DaySchema = z.enum(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]);
@@ -172,18 +173,23 @@ export async function POST(request: Request) {
         where: { groupId_round: { groupId, round } },
       });
 
+      const roundHashtags = postInput.hashtags.map(normalizeHashtag);
+      const roundSearchText = buildSearchText({ text: postInput.text, hashtags: roundHashtags });
+
       await tx.post.upsert({
         where: { roundId: createdRound.id },
         create: {
           authorId: user.id,
           text: postInput.text,
-          hashtags: postInput.hashtags.map(normalizeHashtag),
+          searchText: roundSearchText,
+          hashtags: roundHashtags,
           source: "round",
           roundId: createdRound.id,
         },
         update: {
           text: postInput.text,
-          hashtags: postInput.hashtags.map(normalizeHashtag),
+          searchText: roundSearchText,
+          hashtags: roundHashtags,
         },
       });
 

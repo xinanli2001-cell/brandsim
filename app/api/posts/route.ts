@@ -6,6 +6,7 @@ import { assertUser, AuthError } from "@/lib/auth/guards";
 import { normalizeHashtag } from "@/lib/hashtag";
 import { checkContent } from "@/lib/moderation";
 import { toPostDTO, computeLikedSet } from "@/lib/posts";
+import { buildSearchText } from "@/lib/search/searchText";
 
 const ProductSchema = z.object({
   title: z.string().min(1).max(120),
@@ -60,6 +61,7 @@ export async function POST(request: Request) {
     data: {
       authorId: user.id,
       text: parsed.data.text,
+      searchText: buildSearchText({ text: parsed.data.text, hashtags, product }),
       hashtags,
       imageUrl: parsed.data.imageUrl,
       source: "free",
