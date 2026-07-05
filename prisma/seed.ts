@@ -21,11 +21,11 @@ async function main() {
     return;
   }
 
-  let teacher = await prisma.teacher.findUnique({ where: { email: SEED_TEACHER_EMAIL } });
+  let teacher = await prisma.user.findUnique({ where: { email: SEED_TEACHER_EMAIL } });
   if (!teacher) {
     const passwordHash = await bcrypt.hash(SEED_TEACHER_PASSWORD, 10);
-    teacher = await prisma.teacher.create({
-      data: { email: SEED_TEACHER_EMAIL, passwordHash },
+    teacher = await prisma.user.create({
+      data: { email: SEED_TEACHER_EMAIL, passwordHash, role: "teacher" },
     });
     console.log("Created seed teacher:", teacher.email, "(password: " + SEED_TEACHER_PASSWORD + ")");
   }

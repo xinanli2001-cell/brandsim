@@ -9,10 +9,11 @@ datasource db {
   provider = "postgresql"
 }
 
-model Teacher {
+model User {
   id           String   @id @default(cuid())
   email        String   @unique
   passwordHash String
+  role         String   @default("student") // student | teacher
   createdAt    DateTime @default(now())
 
   sessions   Session[]
@@ -22,8 +23,8 @@ model Teacher {
 model Session {
   id        String   @id @default(cuid())
   token     String   @unique
-  teacherId String
-  teacher   Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   expiresAt DateTime
   createdAt DateTime @default(now())
 }
@@ -31,7 +32,7 @@ model Session {
 model Challenge {
   id                 String   @id @default(cuid())
   teacherId          String
-  teacher            Teacher  @relation(fields: [teacherId], references: [id])
+  teacher            User     @relation(fields: [teacherId], references: [id])
   status             String   @default("active") // active | paused | ended
   brandName          String
   brandBackground    String
