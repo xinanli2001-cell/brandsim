@@ -9,6 +9,19 @@ const BASE = "http://localhost:3000";
 const COST_PER_ATTEMPT = 5;
 const CONCURRENCY = 6;
 
+async function signUpStudent(): Promise<string> {
+  const email = `student_race_${Math.random().toString(36).slice(2, 8)}@example.com`;
+  const res = await fetch(`${BASE}/api/auth/signup`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password: "password123" }),
+  });
+  if (!res.ok) throw new Error("student signup failed for test-race setup");
+  const setCookie = res.headers.get("set-cookie");
+  if (!setCookie) throw new Error("no session cookie returned from signup");
+  return setCookie.split(";")[0];
+}
+
 function makeBody(groupId: string) {
   return JSON.stringify({
     groupId,
@@ -25,10 +38,11 @@ function makeBody(groupId: string) {
 }
 
 async function main() {
+  const cookie = await signUpStudent();
   const groupName = "race-test-" + Math.random().toString(36).slice(2, 7);
   const joinRes = await fetch(`${BASE}/api/join`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", cookie },
     body: JSON.stringify({ joinCode: "GREEN1", groupName }),
   });
   const join = await joinRes.json();
@@ -41,7 +55,7 @@ async function main() {
     Array.from({ length: CONCURRENCY }, () =>
       fetch(`${BASE}/api/rounds`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", cookie },
         body: makeBody(groupId),
       }),
     ),
