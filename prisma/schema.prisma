@@ -91,6 +91,7 @@ model Post {
   author       User     @relation(fields: [authorId], references: [id])
   text         String
   searchText   String   @default("")
+  embedding    Unsupported("vector(1536)")?
   hashtags     String[]
   imageUrl     String?
   source       String // "round" | "free"
