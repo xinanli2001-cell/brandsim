@@ -90,6 +90,7 @@ model Post {
   authorId     String
   author       User     @relation(fields: [authorId], references: [id])
   text         String
+  searchText   String   @default("")
   hashtags     String[]
   imageUrl     String?
   source       String // "round" | "free"
@@ -139,4 +140,41 @@ model Comment {
   createdAt DateTime @default(now())
 
   @@index([postId, createdAt])
+}
+
+model EvalQuery {
+  id        String   @id @default(cuid())
+  text      String   @unique
+  source    String // "topic" | "manual" | "llm_generated"
+  createdAt DateTime @default(now())
+
+  judgments EvalJudgment[]
+  runs      EvalRun[]
+}
+
+model EvalJudgment {
+  id        String    @id @default(cuid())
+  queryId   String
+  query     EvalQuery @relation(fields: [queryId], references: [id], onDelete: Cascade)
+  postId    String
+  relevance Int // 0..3
+  judgedBy  String // "llm" | "heuristic"
+  createdAt DateTime  @default(now())
+
+  @@unique([queryId, postId])
+}
+
+model EvalRun {
+  id            String    @id @default(cuid())
+  queryId       String
+  query         EvalQuery @relation(fields: [queryId], references: [id], onDelete: Cascade)
+  strategy      String // "keyword" | "semantic" | "llm_rerank"
+  resultPostIds String[]
+  ndcg          Float
+  mrr           Float
+  precisionAt5  Float
+  zeroResult    Boolean
+  createdAt     DateTime  @default(now())
+
+  @@unique([queryId, strategy])
 }
