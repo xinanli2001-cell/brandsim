@@ -18,6 +18,9 @@ model User {
 
   sessions   Session[]
   challenges Challenge[]
+  posts      Post[]
+  likes      Like[]
+  comments   Comment[]
 }
 
 model Session {
@@ -52,15 +55,15 @@ model Challenge {
 }
 
 model Group {
-  id           String   @id @default(cuid())
+  id           String    @id @default(cuid())
   challengeId  String
   challenge    Challenge @relation(fields: [challengeId], references: [id])
   groupName    String
   tokenBalance Int
-  currentRound Int      @default(1)
-  status       String   @default("in_progress") // in_progress | finished
+  currentRound Int       @default(1)
+  status       String    @default("in_progress") // in_progress | finished
   finalScore   Int?
-  createdAt    DateTime @default(now())
+  createdAt    DateTime  @default(now())
 
   rounds Round[]
 
@@ -77,5 +80,63 @@ model Round {
   result    Json
   createdAt DateTime @default(now())
 
+  plazaPost Post?
+
   @@unique([groupId, round])
+}
+
+model Post {
+  id           String   @id @default(cuid())
+  authorId     String
+  author       User     @relation(fields: [authorId], references: [id])
+  text         String
+  hashtags     String[]
+  imageUrl     String?
+  source       String // "round" | "free"
+  roundId      String?  @unique
+  round        Round?   @relation(fields: [roundId], references: [id])
+  productId    String?
+  product      Product? @relation(fields: [productId], references: [id])
+  likeCount    Int      @default(0)
+  commentCount Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  likes    Like[]
+  comments Comment[]
+
+  @@index([createdAt])
+}
+
+model Product {
+  id       String   @id @default(cuid())
+  title    String
+  category String
+  price    Int
+  tags     String[]
+  imageUrl String?
+
+  posts Post[]
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([postId, userId])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  text      String
+  createdAt DateTime @default(now())
+
+  @@index([postId, createdAt])
 }
