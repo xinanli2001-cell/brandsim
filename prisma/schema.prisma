@@ -1,5 +1,5 @@
-// Day2: SQLite 起步（零配置）。Day5 部署前把 provider 换 "postgresql"，
-// DATABASE_URL 指向 Neon，跑一次 `prisma migrate deploy` 即可迁移，业务代码不用改。
+// Postgres (driver adapter in lib/db.ts). DATABASE_URL 换成 Neon 连接串后，
+// 跑一次 `prisma migrate deploy` 即可部署到云端，业务代码不用改。
 
 generator client {
   provider = "prisma-client-js"
