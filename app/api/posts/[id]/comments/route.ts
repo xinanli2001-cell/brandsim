@@ -68,6 +68,12 @@ export async function GET(
   ctx: RouteContext<"/api/posts/[id]/comments">,
 ) {
   const { id: postId } = await ctx.params;
+
+  const post = await prisma.post.findUnique({ where: { id: postId } });
+  if (!post) {
+    return NextResponse.json({ error: "Post not found" }, { status: 404 });
+  }
+
   const comments = await prisma.comment.findMany({
     where: { postId },
     orderBy: { createdAt: "asc" },
