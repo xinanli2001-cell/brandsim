@@ -2,13 +2,11 @@
 
 import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+import { PrismaPg } from "@prisma/adapter-pg";
 import bcrypt from "bcryptjs";
 import { DEFAULT_CHALLENGE } from "../lib/data/challenge";
 
-const adapter = new PrismaBetterSqlite3({
-  url: process.env.DATABASE_URL?.replace(/^file:/, "") ?? "./dev.db",
-});
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
 
 const SEED_TEACHER_EMAIL = "teacher@example.com";
@@ -23,11 +21,11 @@ async function main() {
     return;
   }
 
-  let teacher = await prisma.teacher.findUnique({ where: { email: SEED_TEACHER_EMAIL } });
+  let teacher = await prisma.user.findUnique({ where: { email: SEED_TEACHER_EMAIL } });
   if (!teacher) {
     const passwordHash = await bcrypt.hash(SEED_TEACHER_PASSWORD, 10);
-    teacher = await prisma.teacher.create({
-      data: { email: SEED_TEACHER_EMAIL, passwordHash },
+    teacher = await prisma.user.create({
+      data: { email: SEED_TEACHER_EMAIL, passwordHash, role: "teacher" },
     });
     console.log("Created seed teacher:", teacher.email, "(password: " + SEED_TEACHER_PASSWORD + ")");
   }

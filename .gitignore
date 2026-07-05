@@ -32,6 +32,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # local sqlite dev database
 *.db
@@ -39,6 +40,9 @@ yarn-error.log*
 
 # vercel
 .vercel
+
+# superpowers scratch (progress ledger, scratch workspace)
+.superpowers/
 
 # typescript
 *.tsbuildinfo

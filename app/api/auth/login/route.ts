@@ -23,14 +23,14 @@ export async function POST(request: Request) {
   }
 
   const email = parsed.data.email.toLowerCase().trim();
-  const teacher = await prisma.teacher.findUnique({ where: { email } });
+  const user = await prisma.user.findUnique({ where: { email } });
   const genericError = NextResponse.json({ error: "Incorrect email or password" }, { status: 401 });
-  if (!teacher) return genericError;
+  if (!user) return genericError;
 
-  const valid = await bcrypt.compare(parsed.data.password, teacher.passwordHash);
+  const valid = await bcrypt.compare(parsed.data.password, user.passwordHash);
   if (!valid) return genericError;
 
-  await createSession(teacher.id);
+  await createSession(user.id);
 
-  return NextResponse.json({ teacher: { id: teacher.id, email: teacher.email } });
+  return NextResponse.json({ user: { id: user.id, email: user.email, role: user.role } });
 }

@@ -26,14 +26,15 @@ export async function POST(request: Request) {
   }
 
   const email = parsed.data.email.toLowerCase().trim();
-  const existing = await prisma.teacher.findUnique({ where: { email } });
+  const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
     return NextResponse.json({ error: "An account with this email already exists" }, { status: 409 });
   }
 
   const passwordHash = await bcrypt.hash(parsed.data.password, 10);
-  const teacher = await prisma.teacher.create({ data: { email, passwordHash } });
-  await createSession(teacher.id);
+  // 安全：role 硬编码 student，绝不读请求体里的 role（防自助提权）。
+  const user = await prisma.user.create({ data: { email, passwordHash, role: "student" } });
+  await createSession(user.id);
 
-  return NextResponse.json({ teacher: { id: teacher.id, email: teacher.email } });
+  return NextResponse.json({ user: { id: user.id, email: user.email, role: user.role } });
 }

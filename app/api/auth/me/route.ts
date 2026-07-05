@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { getCurrentTeacher } from "@/lib/auth/session";
+import { getCurrentUser } from "@/lib/auth/session";
 
 export async function GET() {
-  const teacher = await getCurrentTeacher();
-  if (!teacher) {
+  const user = await getCurrentUser();
+  if (!user) {
     return NextResponse.json({ error: "Not logged in" }, { status: 401 });
   }
-  return NextResponse.json({ teacher: { id: teacher.id, email: teacher.email } });
+  return NextResponse.json({ user: { id: user.id, email: user.email, role: user.role } });
 }

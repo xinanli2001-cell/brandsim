@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { MaterialIcon } from "@/components/MaterialIcon";
@@ -12,6 +12,17 @@ export default function JoinPage() {
   const [joinCode, setJoinCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/auth/me").then((res) => {
+      if (!res.ok) {
+        router.push("/login");
+        return;
+      }
+      setCheckingAuth(false);
+    });
+  }, [router]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -39,6 +50,14 @@ export default function JoinPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  if (checkingAuth) {
+    return (
+      <main className="bg-surface-bg min-h-screen flex items-center justify-center">
+        <p className="font-body-main text-body-main text-on-surface-variant">Checking session...</p>
+      </main>
+    );
   }
 
   return (

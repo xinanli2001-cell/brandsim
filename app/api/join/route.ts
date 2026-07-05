@@ -3,6 +3,8 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { normalizeJoinCode } from "@/lib/join-code";
 import { toChallenge, toGameState } from "@/lib/game-state";
+import { getCurrentUser } from "@/lib/auth/session";
+import { assertUser, AuthError } from "@/lib/auth/guards";
 
 const BodySchema = z.object({
   joinCode: z.string().min(1),
@@ -10,6 +12,13 @@ const BodySchema = z.object({
 });
 
 export async function POST(request: Request) {
+  try {
+    assertUser(await getCurrentUser());
+  } catch (e) {
+    if (e instanceof AuthError) return NextResponse.json({ error: e.message }, { status: e.status });
+    throw e;
+  }
+
   let body: unknown;
   try {
     body = await request.json();

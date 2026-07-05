@@ -8,6 +8,10 @@ import { prisma } from "@/lib/db";
 import { toChallenge, toGameState } from "@/lib/game-state";
 import { evaluate, computeFinalScore } from "@/lib/engine/evaluate";
 import { checkContent } from "@/lib/moderation";
+import { getCurrentUser } from "@/lib/auth/session";
+import { assertUser, AuthError } from "@/lib/auth/guards";
+import { normalizeHashtag } from "@/lib/hashtag";
+import { buildSearchText } from "@/lib/search/searchText";
 import type { EvaluationRequest, EvaluationResult } from "@/lib/types";
 
 const DaySchema = z.enum(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]);
@@ -48,6 +52,14 @@ class RoundConflictError extends Error {
 }
 
 export async function POST(request: Request) {
+  let user;
+  try {
+    user = assertUser(await getCurrentUser());
+  } catch (e) {
+    if (e instanceof AuthError) return NextResponse.json({ error: e.message }, { status: e.status });
+    throw e;
+  }
+
   let body: unknown;
   try {
     body = await request.json();
@@ -156,6 +168,30 @@ export async function POST(request: Request) {
         }
         throw err;
       }
+
+      const createdRound = await tx.round.findUniqueOrThrow({
+        where: { groupId_round: { groupId, round } },
+      });
+
+      const roundHashtags = postInput.hashtags.map(normalizeHashtag);
+      const roundSearchText = buildSearchText({ text: postInput.text, hashtags: roundHashtags });
+
+      await tx.post.upsert({
+        where: { roundId: createdRound.id },
+        create: {
+          authorId: user.id,
+          text: postInput.text,
+          searchText: roundSearchText,
+          hashtags: roundHashtags,
+          source: "round",
+          roundId: createdRound.id,
+        },
+        update: {
+          text: postInput.text,
+          searchText: roundSearchText,
+          hashtags: roundHashtags,
+        },
+      });
 
       const isLastRound = round >= challenge.totalRounds;
       const priorResults: EvaluationResult[] = freshGroup.rounds
