@@ -18,7 +18,8 @@ export default function TeacherLoginPage() {
     setError(null);
     setLoading(true);
     try {
-      const res = await fetch(`/api/auth/${mode}`, {
+      const endpoint = mode === "signup" ? "/api/auth/teacher-signup" : "/api/auth/login";
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
