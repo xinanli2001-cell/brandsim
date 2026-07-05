@@ -5,7 +5,7 @@ import OpenAI from "openai";
 export async function embedText(text: string): Promise<number[] | null> {
   if (!process.env.OPENAI_API_KEY) return null;
   try {
-    const client = new OpenAI();
+    const client = new OpenAI({ baseURL: process.env.OPENAI_BASE_URL });
     const resp = await client.embeddings.create({ model: "text-embedding-3-small", input: text });
     return resp.data[0]?.embedding ?? null;
   } catch (err) {
