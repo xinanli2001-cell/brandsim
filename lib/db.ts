@@ -1,14 +1,12 @@
 import { PrismaClient } from "@prisma/client";
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+import { PrismaPg } from "@prisma/adapter-pg";
 
-// Prisma 7 requires an explicit driver adapter (no implicit env URL read).
-// Day5 部署时把这里换成 @prisma/adapter-neon / adapter-pg 指向 Postgres 即可，业务代码不用改。
+// Prisma 7 需要显式 driver adapter。pg adapter 用标准 Postgres 连接串，
+// 本地 Postgres 与 Neon 同一套代码，切库只改 DATABASE_URL。
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
 function createClient() {
-  const adapter = new PrismaBetterSqlite3({
-    url: process.env.DATABASE_URL?.replace(/^file:/, "") ?? "./dev.db",
-  });
+  const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
   return new PrismaClient({ adapter });
 }
 
