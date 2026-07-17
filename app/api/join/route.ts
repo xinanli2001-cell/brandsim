@@ -2,14 +2,20 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { normalizeJoinCode } from "@/lib/join-code";
+import { uniqueGroupName } from "@/lib/data/group";
+import { getCurrentStudent } from "@/lib/auth/session";
 import { toChallenge, toGameState } from "@/lib/game-state";
 
 const BodySchema = z.object({
   joinCode: z.string().min(1),
-  groupName: z.string().min(1).max(40),
 });
 
 export async function POST(request: Request) {
+  const student = await getCurrentStudent();
+  if (!student) {
+    return NextResponse.json({ error: "Not logged in" }, { status: 401 });
+  }
+
   let body: unknown;
   try {
     body = await request.json();
@@ -26,7 +32,6 @@ export async function POST(request: Request) {
   }
 
   const joinCode = normalizeJoinCode(parsed.data.joinCode);
-  const groupName = parsed.data.groupName.trim();
 
   const challengeRow = await prisma.challenge.findUnique({ where: { joinCode } });
   if (!challengeRow) {
@@ -37,14 +42,24 @@ export async function POST(request: Request) {
   }
 
   let group = await prisma.group.findUnique({
-    where: { challengeId_groupName: { challengeId: challengeRow.id, groupName } },
+    where: { challengeId_studentId: { challengeId: challengeRow.id, studentId: student.id } },
     include: { rounds: true },
   });
 
-  if (!group) {
+  if (group) {
+    if (group.leftAt) {
+      group = await prisma.group.update({
+        where: { id: group.id },
+        data: { leftAt: null },
+        include: { rounds: true },
+      });
+    }
+  } else {
+    const groupName = await uniqueGroupName(challengeRow.id, student.displayName);
     group = await prisma.group.create({
       data: {
         challengeId: challengeRow.id,
+        studentId: student.id,
         groupName,
         tokenBalance: challengeRow.startingTokens,
         currentRound: 1,
