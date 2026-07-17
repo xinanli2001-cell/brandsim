@@ -30,7 +30,7 @@ export async function POST(request: Request) {
   const valid = await bcrypt.compare(parsed.data.password, teacher.passwordHash);
   if (!valid) return genericError;
 
-  await createSession(teacher.id);
+  await createSession({ teacherId: teacher.id });
 
   return NextResponse.json({ teacher: { id: teacher.id, email: teacher.email } });
 }

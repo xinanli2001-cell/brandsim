@@ -33,7 +33,7 @@ export async function POST(request: Request) {
 
   const passwordHash = await bcrypt.hash(parsed.data.password, 10);
   const teacher = await prisma.teacher.create({ data: { email, passwordHash } });
-  await createSession(teacher.id);
+  await createSession({ teacherId: teacher.id });
 
   return NextResponse.json({ teacher: { id: teacher.id, email: teacher.email } });
 }
