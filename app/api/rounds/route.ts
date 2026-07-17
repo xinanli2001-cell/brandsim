@@ -8,6 +8,7 @@ import { prisma } from "@/lib/db";
 import { toChallenge, toGameState } from "@/lib/game-state";
 import { evaluate, computeFinalScore } from "@/lib/engine/evaluate";
 import { checkContent } from "@/lib/moderation";
+import { getCurrentStudent } from "@/lib/auth/session";
 import type { EvaluationRequest, EvaluationResult } from "@/lib/types";
 
 const DaySchema = z.enum(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]);
@@ -76,6 +77,13 @@ export async function POST(request: Request) {
   });
   if (!group) {
     return NextResponse.json({ error: "Group not found" }, { status: 404 });
+  }
+  const student = await getCurrentStudent();
+  if (!student) {
+    return NextResponse.json({ error: "Not logged in" }, { status: 401 });
+  }
+  if (group.studentId !== student.id) {
+    return NextResponse.json({ error: "Not authorized to submit for this group" }, { status: 403 });
   }
   if (group.status === "finished") {
     return NextResponse.json({ error: "This session has already finished" }, { status: 409 });
