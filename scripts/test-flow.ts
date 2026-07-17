@@ -101,7 +101,9 @@ async function main() {
     );
   }
 
-  const lbRes = await fetch(`${BASE}/api/leaderboard/${challenge.id}?groupId=${groupId}`);
+  const lbRes = await fetch(`${BASE}/api/leaderboard/${challenge.id}?groupId=${groupId}`, {
+    headers: { Cookie: studentCookie },
+  });
   const lb = await lbRes.json();
   console.log("== leaderboard ==", lbRes.status);
   console.table(lb.entries);

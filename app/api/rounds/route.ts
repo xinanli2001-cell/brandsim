@@ -70,6 +70,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: moderation.reason }, { status: 422 });
   }
 
+  const student = await getCurrentStudent();
+  if (!student) {
+    return NextResponse.json({ error: "Not logged in" }, { status: 401 });
+  }
+
   // 快速失败预检：不进事务，避免让白跑的 LLM 调用挡住其他请求。
   const group = await prisma.group.findUnique({
     where: { id: groupId },
@@ -77,10 +82,6 @@ export async function POST(request: Request) {
   });
   if (!group) {
     return NextResponse.json({ error: "Group not found" }, { status: 404 });
-  }
-  const student = await getCurrentStudent();
-  if (!student) {
-    return NextResponse.json({ error: "Not logged in" }, { status: 401 });
   }
   if (group.studentId !== student.id) {
     return NextResponse.json({ error: "Not authorized to submit for this group" }, { status: 403 });

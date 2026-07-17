@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { normalizeJoinCode } from "@/lib/join-code";
 import { uniqueGroupName } from "@/lib/data/group";
@@ -55,18 +56,41 @@ export async function POST(request: Request) {
       });
     }
   } else {
-    const groupName = await uniqueGroupName(challengeRow.id, student.displayName);
-    group = await prisma.group.create({
-      data: {
-        challengeId: challengeRow.id,
-        studentId: student.id,
-        groupName,
-        tokenBalance: challengeRow.startingTokens,
-        currentRound: 1,
-        status: "in_progress",
-      },
-      include: { rounds: true },
-    });
+    let groupName = await uniqueGroupName(challengeRow.id, student.displayName);
+    for (let attempt = 0; attempt < 3 && !group; attempt++) {
+      try {
+        group = await prisma.group.create({
+          data: {
+            challengeId: challengeRow.id,
+            studentId: student.id,
+            groupName,
+            tokenBalance: challengeRow.startingTokens,
+            currentRound: 1,
+            status: "in_progress",
+          },
+          include: { rounds: true },
+        });
+      } catch (err) {
+        if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+          const target = (err.meta?.target as string[] | undefined) ?? [];
+          if (target.includes("studentId")) {
+            // 另一个并发请求已经为该学生建好了 group，直接复用
+            group = await prisma.group.findUnique({
+              where: { challengeId_studentId: { challengeId: challengeRow.id, studentId: student.id } },
+              include: { rounds: true },
+            });
+          } else {
+            // groupName 撞车（另一个学生同时用了相同的重名后缀），重新生成后重试
+            groupName = await uniqueGroupName(challengeRow.id, student.displayName);
+          }
+          continue;
+        }
+        throw err;
+      }
+    }
+    if (!group) {
+      return NextResponse.json({ error: "Failed to join, please try again" }, { status: 409 });
+    }
   }
 
   return NextResponse.json({
