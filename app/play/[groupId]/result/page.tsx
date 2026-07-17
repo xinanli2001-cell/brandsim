@@ -11,7 +11,7 @@ import {
   Tooltip,
 } from "recharts";
 import { MaterialIcon } from "@/components/MaterialIcon";
-import { useGame } from "../GameProvider";
+import { useGame } from "../../GameProvider";
 import type { LeaderboardEntry } from "@/lib/types";
 
 export default function ResultPage() {

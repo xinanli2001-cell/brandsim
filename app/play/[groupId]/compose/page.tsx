@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { MaterialIcon } from "@/components/MaterialIcon";
-import { useGame } from "../GameProvider";
+import { useGame } from "../../GameProvider";
 import type { Day, Influencer } from "@/lib/types";
 
 const DAYS: Day[] = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -117,7 +117,7 @@ export default function ComposePage() {
         return;
       }
       await refresh();
-      router.push("/play/dashboard");
+      router.push(`/play/${session.groupId}/dashboard`);
     } catch {
       setError("Network error, please try again");
     } finally {

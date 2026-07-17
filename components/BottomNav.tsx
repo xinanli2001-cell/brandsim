@@ -3,20 +3,27 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { MaterialIcon } from "./MaterialIcon";
-
-const TABS = [
-  { href: "/play/brief", icon: "campaign", label: "Challenge" },
-  { href: "/play/compose", icon: "storefront", label: "Market" },
-  { href: "/play/dashboard#feed", icon: "forum", label: "Social", match: "/play/dashboard" },
-  { href: "/play/dashboard", icon: "analytics", label: "Results" },
-];
+import { useGame } from "@/app/play/GameProvider";
 
 export function BottomNav() {
   const pathname = usePathname();
+  const { session } = useGame();
+
+  const tabs = [
+    { href: `/play/${session.groupId}/brief`, icon: "campaign", label: "Challenge" },
+    { href: `/play/${session.groupId}/compose`, icon: "storefront", label: "Market" },
+    {
+      href: `/play/${session.groupId}/dashboard#feed`,
+      icon: "forum",
+      label: "Social",
+      match: `/play/${session.groupId}/dashboard`,
+    },
+    { href: `/play/${session.groupId}/dashboard`, icon: "analytics", label: "Results" },
+  ];
 
   return (
     <nav className="bg-surface/80 backdrop-blur-md docked full-width bottom-0 fixed z-50 border-t border-outline-variant shadow-lg flex justify-around items-center px-4 pb-6 pt-2 w-full md:hidden">
-      {TABS.map((tab) => {
+      {tabs.map((tab) => {
         const active = pathname === (tab.match ?? tab.href);
         return (
           <Link

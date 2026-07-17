@@ -1,12 +1,17 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { loadSession, type ClientSession } from "@/lib/client/session";
+import { useParams, useRouter } from "next/navigation";
 import type { Challenge, GameState } from "@/lib/types";
 
+export interface PlaySession {
+  groupId: string;
+  challengeId: string;
+  groupName: string;
+}
+
 interface GameContextValue {
-  session: ClientSession;
+  session: PlaySession;
   challenge: Challenge;
   gameState: GameState;
   refresh: () => Promise<void>;
@@ -22,27 +27,31 @@ export function useGame(): GameContextValue {
 
 export function GameProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const [session, setSession] = useState<ClientSession | null>(null);
+  const params = useParams<{ groupId: string }>();
+  const [session, setSession] = useState<PlaySession | null>(null);
   const [challenge, setChallenge] = useState<Challenge | null>(null);
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
-    const s = loadSession();
-    if (!s) {
-      router.replace("/join");
+    const res = await fetch(`/api/game/${params.groupId}`);
+    if (res.status === 401) {
+      router.replace("/");
       return;
     }
-    setSession(s);
-    const res = await fetch(`/api/game/${s.groupId}`);
+    if (res.status === 403) {
+      setError("This challenge doesn't belong to your account.");
+      return;
+    }
     if (!res.ok) {
       setError("Group not found. Please join again.");
       return;
     }
     const data = await res.json();
+    setSession({ groupId: data.groupId, challengeId: data.challenge.id, groupName: data.groupName });
     setChallenge(data.challenge);
     setGameState(data.gameState);
-  }, [router]);
+  }, [params.groupId, router]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- initial mount fetch
@@ -56,9 +65,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         <p className="font-body-main text-body-main text-on-surface-variant">{error}</p>
         <button
           className="bg-primary text-on-primary px-6 py-3 rounded-xl font-title-md text-title-md"
-          onClick={() => router.replace("/join")}
+          onClick={() => router.replace("/student")}
         >
-          Join Again
+          Back to My Challenges
         </button>
       </div>
     );

@@ -13,7 +13,7 @@ import {
   Legend,
 } from "recharts";
 import { MaterialIcon } from "@/components/MaterialIcon";
-import { useGame } from "../GameProvider";
+import { useGame } from "../../GameProvider";
 
 function MetricCard({
   label,
@@ -43,17 +43,17 @@ function MetricCard({
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { gameState } = useGame();
+  const { gameState, session } = useGame();
 
   const latest = gameState.history[gameState.history.length - 1];
 
   useEffect(() => {
     if (gameState.status === "finished") {
-      router.replace("/play/result");
+      router.replace(`/play/${session.groupId}/result`);
     } else if (!latest) {
-      router.replace("/play/compose");
+      router.replace(`/play/${session.groupId}/compose`);
     }
-  }, [gameState.status, latest, router]);
+  }, [gameState.status, latest, router, session.groupId]);
 
   if (!latest || gameState.status === "finished") return null;
 
@@ -202,7 +202,7 @@ export default function DashboardPage() {
 
       <div className="flex justify-end mt-4 pb-8">
         <button
-          onClick={() => router.push("/play/compose")}
+          onClick={() => router.push(`/play/${session.groupId}/compose`)}
           className="bg-primary text-on-primary px-8 py-3 rounded-full font-bold shadow-lg hover:scale-95 active:scale-90 transition-all flex items-center gap-2"
         >
           Enter Next Round

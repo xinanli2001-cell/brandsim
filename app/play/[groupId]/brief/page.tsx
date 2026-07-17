@@ -2,11 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { MaterialIcon } from "@/components/MaterialIcon";
-import { useGame } from "../GameProvider";
+import { useGame } from "../../GameProvider";
 
 export default function BriefPage() {
   const router = useRouter();
-  const { challenge, gameState } = useGame();
+  const { challenge, gameState, session } = useGame();
 
   return (
     <>
@@ -119,7 +119,7 @@ export default function BriefPage() {
 
       <div className="mt-8 flex justify-center">
         <button
-          onClick={() => router.push("/play/compose")}
+          onClick={() => router.push(`/play/${session.groupId}/compose`)}
           className="bg-primary text-on-primary font-title-md text-title-md px-8 py-4 rounded-xl shadow-md hover:shadow-lg hover:scale-95 transition-all active:scale-90 flex items-center gap-2 group"
         >
           Start Round {gameState.currentRound}
