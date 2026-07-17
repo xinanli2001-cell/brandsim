@@ -19,10 +19,7 @@ export function TeacherShell({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<"loading" | "authed" | "unauthed">("loading");
   const [email, setEmail] = useState<string>("");
 
-  const isLoginPage = pathname === "/teacher/login";
-
   useEffect(() => {
-    if (isLoginPage) return;
     fetch("/api/auth/me")
       .then(async (res) => {
         if (!res.ok) {
@@ -30,22 +27,24 @@ export function TeacherShell({ children }: { children: React.ReactNode }) {
           return;
         }
         const data = await res.json();
+        if (data.role !== "teacher") {
+          setStatus("unauthed");
+          return;
+        }
         setEmail(data.teacher.email);
         setStatus("authed");
       })
       .catch(() => setStatus("unauthed"));
-  }, [isLoginPage]);
+  }, []);
 
   useEffect(() => {
-    if (status === "unauthed") router.replace("/teacher/login");
+    if (status === "unauthed") router.replace("/");
   }, [status, router]);
 
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST" });
-    router.replace("/teacher/login");
+    router.replace("/");
   }
-
-  if (isLoginPage) return <>{children}</>;
 
   if (status === "loading" || status === "unauthed") {
     return (

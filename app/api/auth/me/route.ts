@@ -1,10 +1,19 @@
 import { NextResponse } from "next/server";
-import { getCurrentTeacher } from "@/lib/auth/session";
+import { getCurrentUser } from "@/lib/auth/session";
 
 export async function GET() {
-  const teacher = await getCurrentTeacher();
-  if (!teacher) {
+  const user = await getCurrentUser();
+  if (!user) {
     return NextResponse.json({ error: "Not logged in" }, { status: 401 });
   }
-  return NextResponse.json({ teacher: { id: teacher.id, email: teacher.email } });
+  if (user.role === "teacher") {
+    return NextResponse.json({
+      role: "teacher",
+      teacher: { id: user.teacher.id, email: user.teacher.email },
+    });
+  }
+  return NextResponse.json({
+    role: "student",
+    student: { id: user.student.id, email: user.student.email, displayName: user.student.displayName },
+  });
 }
