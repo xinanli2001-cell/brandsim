@@ -125,6 +125,21 @@ async function main() {
     join2,
   );
 
+  // 9b. 验证真的生成了不同的显示名后缀（不仅仅是不同 groupId）
+  const group1Info = await fetch(`${BASE}/api/game/${groupId}`, { headers: { Cookie: studentCookie } }).then((r) =>
+    r.json(),
+  );
+  const group2Info = await fetch(`${BASE}/api/game/${join2.groupId}`, { headers: { Cookie: student2Cookie } }).then(
+    (r) => r.json(),
+  );
+  check(
+    "Duplicate display name actually gets a distinct suffixed group name",
+    group1Info.groupName === displayName &&
+      group2Info.groupName !== displayName &&
+      group2Info.groupName.startsWith(displayName),
+    { group1Name: group1Info.groupName, group2Name: group2Info.groupName },
+  );
+
   // 10. 退出挑战：从列表移除，但数据仍在（重新加入拿回同一个 group）
   const leaveRes = await fetch(`${BASE}/api/groups/${groupId}/leave`, {
     method: "POST",
@@ -147,6 +162,10 @@ async function main() {
   });
   const rejoin = await rejoinRes.json();
   check("Rejoining after leaving reuses the same group (data retained)", rejoin.groupId === groupId, rejoin);
+
+  // 11a. 正对照：本人应能正常读取自己的 group（证明下面的 403 不是端点整体挂了）
+  const ownGameRes = await fetch(`${BASE}/api/game/${groupId}`, { headers: { Cookie: studentCookie } });
+  check("Owning student can still view their own group (positive control for the 403 check below)", ownGameRes.status === 200);
 
   // 11. 另一个学生不能读取/提交别人的 group
   const foreignGameRes = await fetch(`${BASE}/api/game/${groupId}`, { headers: { Cookie: student2Cookie } });
