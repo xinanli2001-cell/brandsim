@@ -16,8 +16,10 @@ CREATE TABLE "Session" (
     CONSTRAINT "Session_teacherId_fkey" FOREIGN KEY ("teacherId") REFERENCES "Teacher" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
--- CreateTable
-CREATE TABLE "Challenge" (
+-- RedefineTables
+PRAGMA defer_foreign_keys=ON;
+PRAGMA foreign_keys=OFF;
+CREATE TABLE "new_Challenge" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "teacherId" TEXT NOT NULL,
     "status" TEXT NOT NULL DEFAULT 'active',
@@ -36,43 +38,15 @@ CREATE TABLE "Challenge" (
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "Challenge_teacherId_fkey" FOREIGN KEY ("teacherId") REFERENCES "Teacher" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
-
--- CreateTable
-CREATE TABLE "Group" (
-    "id" TEXT NOT NULL PRIMARY KEY,
-    "challengeId" TEXT NOT NULL,
-    "groupName" TEXT NOT NULL,
-    "tokenBalance" INTEGER NOT NULL,
-    "currentRound" INTEGER NOT NULL DEFAULT 1,
-    "status" TEXT NOT NULL DEFAULT 'in_progress',
-    "finalScore" INTEGER,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "Group_challengeId_fkey" FOREIGN KEY ("challengeId") REFERENCES "Challenge" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
-);
-
--- CreateTable
-CREATE TABLE "Round" (
-    "id" TEXT NOT NULL PRIMARY KEY,
-    "groupId" TEXT NOT NULL,
-    "round" INTEGER NOT NULL,
-    "post" JSONB NOT NULL,
-    "actions" JSONB NOT NULL,
-    "result" JSONB NOT NULL,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "Round_groupId_fkey" FOREIGN KEY ("groupId") REFERENCES "Group" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
-);
+INSERT INTO "new_Challenge" ("availableActions", "brandBackground", "brandName", "createdAt", "difficulty", "followerBase", "goal", "id", "joinCode", "leaderboardEnabled", "seasonalContext", "startingTokens", "status", "targetAudience", "teacherId", "totalRounds") SELECT "availableActions", "brandBackground", "brandName", "createdAt", "difficulty", "followerBase", "goal", "id", "joinCode", "leaderboardEnabled", "seasonalContext", "startingTokens", "status", "targetAudience", "teacherId", "totalRounds" FROM "Challenge";
+DROP TABLE "Challenge";
+ALTER TABLE "new_Challenge" RENAME TO "Challenge";
+CREATE UNIQUE INDEX "Challenge_joinCode_key" ON "Challenge"("joinCode");
+PRAGMA foreign_keys=ON;
+PRAGMA defer_foreign_keys=OFF;
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Teacher_email_key" ON "Teacher"("email");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Session_token_key" ON "Session"("token");
-
--- CreateIndex
-CREATE UNIQUE INDEX "Challenge_joinCode_key" ON "Challenge"("joinCode");
-
--- CreateIndex
-CREATE UNIQUE INDEX "Group_challengeId_groupName_key" ON "Group"("challengeId", "groupName");
-
--- CreateIndex
-CREATE UNIQUE INDEX "Round_groupId_round_key" ON "Round"("groupId", "round");
