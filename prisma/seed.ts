@@ -13,6 +13,9 @@ const prisma = new PrismaClient({ adapter });
 
 const SEED_TEACHER_EMAIL = "teacher@example.com";
 const SEED_TEACHER_PASSWORD = "password123";
+const SEED_STUDENT_EMAIL = "student@example.com";
+const SEED_STUDENT_PASSWORD = "password123";
+const SEED_STUDENT_DISPLAY_NAME = "Demo Student";
 
 async function main() {
   const existing = await prisma.challenge.findUnique({
@@ -30,6 +33,19 @@ async function main() {
       data: { email: SEED_TEACHER_EMAIL, passwordHash },
     });
     console.log("Created seed teacher:", teacher.email, "(password: " + SEED_TEACHER_PASSWORD + ")");
+  }
+
+  const existingStudent = await prisma.student.findUnique({ where: { email: SEED_STUDENT_EMAIL } });
+  if (!existingStudent) {
+    const studentPasswordHash = await bcrypt.hash(SEED_STUDENT_PASSWORD, 10);
+    const student = await prisma.student.create({
+      data: {
+        email: SEED_STUDENT_EMAIL,
+        passwordHash: studentPasswordHash,
+        displayName: SEED_STUDENT_DISPLAY_NAME,
+      },
+    });
+    console.log("Created seed student:", student.email, "(password: " + SEED_STUDENT_PASSWORD + ")");
   }
 
   const c = await prisma.challenge.create({
