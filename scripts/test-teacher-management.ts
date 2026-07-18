@@ -113,6 +113,25 @@ async function main() {
     editedLocked,
   );
 
+  // 4b. 学生身份不能编辑/归档/删除这个挑战（应该 401，不是老师权限判断的 403）
+  const studentEditRes = await fetch(`${BASE}/api/challenges/${challenge.id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", Cookie: studentCookie },
+    body: JSON.stringify(baseChallengePayload("Student Hijack Attempt")),
+  });
+  check("A student session cannot edit a challenge (401)", studentEditRes.status === 401);
+  const studentArchiveRes = await fetch(`${BASE}/api/challenges/${challenge.id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", Cookie: studentCookie },
+    body: JSON.stringify({ archived: true }),
+  });
+  check("A student session cannot archive a challenge (401)", studentArchiveRes.status === 401);
+  const studentDeleteRes = await fetch(`${BASE}/api/challenges/${challenge.id}`, {
+    method: "DELETE",
+    headers: { Cookie: studentCookie },
+  });
+  check("A student session cannot delete a challenge (401)", studentDeleteRes.status === 401);
+
   // 5. 归档：默认列表看不到，?archived=true 能看到
   const archiveRes = await fetch(`${BASE}/api/challenges/${challenge.id}`, {
     method: "PATCH",
@@ -135,6 +154,22 @@ async function main() {
     "Archived challenge appears in the archived list",
     archivedList.challenges.some((c: { id: string }) => c.id === challenge.id),
     archivedList,
+  );
+
+  // 5b. 归档状态下仍然可以编辑（归档只影响列表可见性，不冻结挑战本身——这是设计决定，不是 bug）
+  const editWhileArchivedRes = await fetch(`${BASE}/api/challenges/${challenge.id}`, {
+    method: "PUT",
+    headers: authHeaders,
+    body: JSON.stringify({ ...baseChallengePayload(`Mgmt Test Archived Edit ${suffix}`), totalRounds: 9, startingTokens: 9999 }),
+  });
+  const editedWhileArchived = (await editWhileArchivedRes.json()).challenge;
+  check(
+    "Editing an archived challenge still works (archive doesn't freeze it) and still enforces the structural lock",
+    editWhileArchivedRes.status === 200 &&
+      editedWhileArchived.brandName === `Mgmt Test Archived Edit ${suffix}` &&
+      editedWhileArchived.totalRounds === 7 && // still locked, unchanged
+      editedWhileArchived.startingTokens === 100, // still locked, unchanged
+    editedWhileArchived,
   );
 
   // 6. 取消归档
@@ -189,6 +224,16 @@ async function main() {
     "Deleted challenge's group no longer appears in the student's list (cascade worked)",
     !studentListAfterDelete.challenges.some((c: { challengeId: string }) => c.challengeId === challenge.id),
     studentListAfterDelete,
+  );
+
+  // 8b. 学生正在挑战里时被老师永久删除：/api/game/[groupId] 应该干净地 404
+  // （这是 GameProvider 已经处理的错误分支——这里验证后端契约，不是重新测前端）
+  const studentGameAfterDeleteRes = await fetch(`${BASE}/api/game/${join.groupId}`, {
+    headers: { Cookie: studentCookie },
+  });
+  check(
+    "Student's mid-session GET /api/game/[groupId] returns a clean 404 after the teacher deletes the challenge",
+    studentGameAfterDeleteRes.status === 404,
   );
 
   if (failures > 0) {
