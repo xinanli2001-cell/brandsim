@@ -7,10 +7,10 @@ import { MaterialIcon } from "@/components/MaterialIcon";
 
 const NAV = [
   { href: "/teacher", icon: "dashboard", label: "Dashboard", enabled: true },
-  { href: "#", icon: "group", label: "Student Progress", enabled: false },
+  { href: "/teacher/students", icon: "group", label: "Student Progress", enabled: true },
   { href: "/teacher/new", icon: "settings_input_component", label: "Campaign Controls", enabled: true },
-  { href: "#", icon: "database", label: "Token Economy", enabled: false },
-  { href: "#", icon: "description", label: "Reports", enabled: false },
+  { href: "/teacher/token-economy", icon: "database", label: "Token Economy", enabled: true },
+  { href: "/teacher/reports", icon: "description", label: "Reports", enabled: true },
 ];
 
 export function TeacherShell({ children }: { children: React.ReactNode }) {
@@ -68,7 +68,7 @@ export function TeacherShell({ children }: { children: React.ReactNode }) {
         </div>
         <ul className="flex-1 flex flex-col gap-2">
           {NAV.map((item) => {
-            const active = item.enabled && pathname === item.href;
+            const active = item.enabled && (pathname === item.href || pathname.startsWith(item.href + "/"));
             return (
               <li key={item.label}>
                 {item.enabled ? (
