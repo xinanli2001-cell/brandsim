@@ -40,6 +40,8 @@ export async function evaluate(req: EvaluationRequest): Promise<EvaluationResult
     req.challenge,
     summariseActions(req),
     summarisePrevious(req),
+    req.actions,
+    req.previousResult ?? null,
   );
 
   const det = computeDeterministic(
