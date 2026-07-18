@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { MaterialIcon } from "@/components/MaterialIcon";
 import { useGame } from "../../GameProvider";
+import { getInitialComposeDraft } from "@/lib/play/compose-history";
 import type { Day, Influencer } from "@/lib/types";
 
 const DAYS: Day[] = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -24,18 +26,19 @@ const AUDIENCE_COST_PER_TAG = 2;
 export default function ComposePage() {
   const router = useRouter();
   const { challenge, gameState, session, refresh } = useGame();
+  const initialDraft = getInitialComposeDraft(gameState);
 
-  const [text, setText] = useState("");
+  const [text, setText] = useState(initialDraft.text);
   const [customHashtag, setCustomHashtag] = useState("");
-  const [hashtags, setHashtags] = useState<string[]>([]);
-  const [imageStyle, setImageStyle] = useState("retro");
-  const [day, setDay] = useState<Day>("Fri");
-  const [hour, setHour] = useState(19);
-  const [boostLevel, setBoostLevel] = useState(1);
-  const [adSpend, setAdSpend] = useState(0);
-  const [demographics, setDemographics] = useState<string[]>([]);
-  const [interests, setInterests] = useState<string[]>([]);
-  const [influencerId, setInfluencerId] = useState<string | null>(null);
+  const [hashtags, setHashtags] = useState<string[]>(initialDraft.hashtags);
+  const [imageStyle, setImageStyle] = useState(initialDraft.imageStyle);
+  const [day, setDay] = useState<Day>(initialDraft.day);
+  const [hour, setHour] = useState(initialDraft.hour);
+  const [boostLevel, setBoostLevel] = useState(initialDraft.boostLevel);
+  const [adSpend, setAdSpend] = useState(initialDraft.adSpend);
+  const [demographics, setDemographics] = useState<string[]>(initialDraft.demographics);
+  const [interests, setInterests] = useState<string[]>(initialDraft.interests);
+  const [influencerId, setInfluencerId] = useState<string | null>(initialDraft.influencerId);
   const [influencers, setInfluencers] = useState<Influencer[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -144,6 +147,13 @@ export default function ComposePage() {
             Craft your post, select actions, and estimate costs before publishing.
           </p>
         </div>
+        <Link
+          href={`/play/${session.groupId}/history`}
+          className="hidden sm:flex px-4 py-2 rounded-xl bg-surface-container-high text-on-surface font-body-main font-medium items-center gap-2"
+        >
+          <MaterialIcon name="history" />
+          History
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-stack-lg items-start relative">

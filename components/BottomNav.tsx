@@ -19,6 +19,7 @@ export function BottomNav() {
       match: `/play/${session.groupId}/dashboard`,
     },
     { href: `/play/${session.groupId}/dashboard`, icon: "analytics", label: "Results" },
+    { href: `/play/${session.groupId}/history`, icon: "history", label: "History" },
   ];
 
   return (
