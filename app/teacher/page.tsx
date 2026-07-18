@@ -36,6 +36,7 @@ export default function TeacherDashboardPage() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- tab switch + initial mount fetch
     load(tab);
   }, [tab, load]);
 
