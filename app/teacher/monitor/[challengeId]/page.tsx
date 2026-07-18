@@ -66,6 +66,18 @@ export default function TeacherMonitorPage() {
     load();
   }
 
+  async function handleDelete() {
+    if (
+      !window.confirm(
+        `Permanently delete "${challenge?.brandName}"? This also deletes every student's data for it. This cannot be undone.`,
+      )
+    ) {
+      return;
+    }
+    await fetch(`/api/challenges/${params.challengeId}`, { method: "DELETE" });
+    router.replace("/teacher");
+  }
+
   if (error) {
     return (
       <div className="flex flex-col items-center gap-4 text-center py-16">
@@ -121,6 +133,13 @@ export default function TeacherMonitorPage() {
           <span className={`font-caption text-caption px-3 py-1.5 rounded-full uppercase ${STATUS_STYLE[challenge.status]}`}>
             {challenge.status}
           </span>
+          <button
+            onClick={() => router.push(`/teacher/${params.challengeId}/edit`)}
+            className="px-4 py-2 rounded-xl bg-surface-container-high text-on-surface font-body-main font-medium flex items-center gap-2"
+          >
+            <MaterialIcon name="edit" />
+            Edit
+          </button>
           {challenge.status !== "ended" && (
             <>
               <button
@@ -139,6 +158,13 @@ export default function TeacherMonitorPage() {
               </button>
             </>
           )}
+          <button
+            onClick={handleDelete}
+            className="px-4 py-2 rounded-xl bg-error-container text-on-error-container font-body-main font-medium flex items-center gap-2"
+          >
+            <MaterialIcon name="delete" />
+            Delete
+          </button>
         </div>
       </div>
 
