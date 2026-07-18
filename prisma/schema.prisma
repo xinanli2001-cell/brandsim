@@ -1,42 +1,35 @@
-// Day2: SQLite 起步（零配置）。Day5 部署前把 provider 换 "postgresql"，
-// DATABASE_URL 指向 Neon，跑一次 `prisma migrate deploy` 即可迁移，业务代码不用改。
+// Postgres (driver adapter in lib/db.ts). DATABASE_URL 换成 Neon 连接串后，
+// 跑一次 `prisma migrate deploy` 即可部署到云端，业务代码不用改。
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
 }
 
-model Teacher {
+model User {
   id           String   @id @default(cuid())
   email        String   @unique
   passwordHash String
+  role         String   @default("student") // student | teacher
+  displayName  String?
   createdAt    DateTime @default(now())
 
   sessions   Session[]
   challenges Challenge[]
-}
-
-model Student {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  passwordHash String
-  displayName  String
-  createdAt    DateTime @default(now())
-
-  sessions Session[]
-  groups   Group[]
+  posts      Post[]
+  likes      Like[]
+  comments   Comment[]
+  groups     Group[]
 }
 
 model Session {
   id        String   @id @default(cuid())
   token     String   @unique
-  teacherId String?
-  teacher   Teacher? @relation(fields: [teacherId], references: [id], onDelete: Cascade)
-  studentId String?
-  student   Student? @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   expiresAt DateTime
   createdAt DateTime @default(now())
 }
@@ -44,7 +37,7 @@ model Session {
 model Challenge {
   id                 String    @id @default(cuid())
   teacherId          String
-  teacher            Teacher   @relation(fields: [teacherId], references: [id])
+  teacher            User      @relation(fields: [teacherId], references: [id])
   status             String    @default("active") // active | paused | ended
   brandName          String
   brandBackground    String
@@ -69,7 +62,7 @@ model Group {
   challengeId  String
   challenge    Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
   studentId    String?
-  student      Student?  @relation(fields: [studentId], references: [id])
+  student      User?     @relation(fields: [studentId], references: [id])
   groupName    String
   tokenBalance Int
   currentRound Int       @default(1)
@@ -94,5 +87,102 @@ model Round {
   result    Json
   createdAt DateTime @default(now())
 
+  plazaPost Post?
+
   @@unique([groupId, round])
+}
+
+model Post {
+  id           String                       @id @default(cuid())
+  authorId     String
+  author       User                         @relation(fields: [authorId], references: [id])
+  text         String
+  searchText   String                       @default("")
+  embedding    Unsupported("vector(1536)")?
+  hashtags     String[]
+  imageUrl     String?
+  source       String // "round" | "free"
+  roundId      String?                      @unique
+  round        Round?                       @relation(fields: [roundId], references: [id])
+  productId    String?
+  product      Product?                     @relation(fields: [productId], references: [id])
+  likeCount    Int                          @default(0)
+  commentCount Int                          @default(0)
+  createdAt    DateTime                     @default(now())
+
+  likes    Like[]
+  comments Comment[]
+
+  @@index([createdAt])
+}
+
+model Product {
+  id       String   @id @default(cuid())
+  title    String
+  category String
+  price    Int
+  tags     String[]
+  imageUrl String?
+
+  posts Post[]
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([postId, userId])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  text      String
+  createdAt DateTime @default(now())
+
+  @@index([postId, createdAt])
+}
+
+model EvalQuery {
+  id        String   @id @default(cuid())
+  text      String   @unique
+  source    String // "topic" | "manual" | "llm_generated"
+  createdAt DateTime @default(now())
+
+  judgments EvalJudgment[]
+  runs      EvalRun[]
+}
+
+model EvalJudgment {
+  id        String    @id @default(cuid())
+  queryId   String
+  query     EvalQuery @relation(fields: [queryId], references: [id], onDelete: Cascade)
+  postId    String
+  relevance Int // 0..3
+  judgedBy  String // "llm" | "heuristic"
+  createdAt DateTime  @default(now())
+
+  @@unique([queryId, postId])
+}
+
+model EvalRun {
+  id            String    @id @default(cuid())
+  queryId       String
+  query         EvalQuery @relation(fields: [queryId], references: [id], onDelete: Cascade)
+  strategy      String // "keyword" | "semantic" | "llm_rerank"
+  resultPostIds String[]
+  ndcg          Float
+  mrr           Float
+  precisionAt5  Float
+  zeroResult    Boolean
+  createdAt     DateTime  @default(now())
+
+  @@unique([queryId, strategy])
 }

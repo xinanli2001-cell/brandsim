@@ -27,7 +27,7 @@ async function login(role: "teacher" | "student", email: string, password: strin
 }
 
 async function signupStudent(email: string, displayName: string) {
-  await fetch(`${BASE}/api/auth/student/signup`, {
+  await fetch(`${BASE}/api/auth/signup`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password: "password123", displayName }),

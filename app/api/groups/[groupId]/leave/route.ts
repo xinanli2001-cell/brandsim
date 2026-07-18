@@ -1,14 +1,18 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getCurrentStudent } from "@/lib/auth/session";
+import { getCurrentUser } from "@/lib/auth/session";
+import { assertStudent, AuthError } from "@/lib/auth/guards";
 
 export async function POST(
   _req: Request,
   ctx: RouteContext<"/api/groups/[groupId]/leave">,
 ) {
-  const student = await getCurrentStudent();
-  if (!student) {
-    return NextResponse.json({ error: "Not logged in" }, { status: 401 });
+  let student;
+  try {
+    student = assertStudent(await getCurrentUser());
+  } catch (e) {
+    if (e instanceof AuthError) return NextResponse.json({ error: e.message }, { status: e.status });
+    throw e;
   }
 
   const { groupId } = await ctx.params;

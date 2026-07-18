@@ -8,7 +8,10 @@ import { prisma } from "@/lib/db";
 import { toChallenge, toGameState } from "@/lib/game-state";
 import { evaluate, computeFinalScore } from "@/lib/engine/evaluate";
 import { checkContent } from "@/lib/moderation";
-import { getCurrentStudent } from "@/lib/auth/session";
+import { getCurrentUser } from "@/lib/auth/session";
+import { assertStudent, AuthError } from "@/lib/auth/guards";
+import { normalizeHashtag } from "@/lib/hashtag";
+import { buildSearchText } from "@/lib/search/searchText";
 import type { EvaluationRequest, EvaluationResult } from "@/lib/types";
 
 const DaySchema = z.enum(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]);
@@ -49,6 +52,14 @@ class RoundConflictError extends Error {
 }
 
 export async function POST(request: Request) {
+  let student;
+  try {
+    student = assertStudent(await getCurrentUser());
+  } catch (e) {
+    if (e instanceof AuthError) return NextResponse.json({ error: e.message }, { status: e.status });
+    throw e;
+  }
+
   let body: unknown;
   try {
     body = await request.json();
@@ -68,11 +79,6 @@ export async function POST(request: Request) {
   const moderation = checkContent([postInput.text, ...postInput.hashtags].join(" "));
   if (!moderation.allowed) {
     return NextResponse.json({ error: moderation.reason }, { status: 422 });
-  }
-
-  const student = await getCurrentStudent();
-  if (!student) {
-    return NextResponse.json({ error: "Not logged in" }, { status: 401 });
   }
 
   // 快速失败预检：不进事务，避免让白跑的 LLM 调用挡住其他请求。
@@ -165,6 +171,30 @@ export async function POST(request: Request) {
         }
         throw err;
       }
+
+      const createdRound = await tx.round.findUniqueOrThrow({
+        where: { groupId_round: { groupId, round } },
+      });
+
+      const roundHashtags = postInput.hashtags.map(normalizeHashtag);
+      const roundSearchText = buildSearchText({ text: postInput.text, hashtags: roundHashtags });
+
+      await tx.post.upsert({
+        where: { roundId: createdRound.id },
+        create: {
+          authorId: student.id,
+          text: postInput.text,
+          searchText: roundSearchText,
+          hashtags: roundHashtags,
+          source: "round",
+          roundId: createdRound.id,
+        },
+        update: {
+          text: postInput.text,
+          searchText: roundSearchText,
+          hashtags: roundHashtags,
+        },
+      });
 
       const isLastRound = round >= challenge.totalRounds;
       const priorResults: EvaluationResult[] = freshGroup.rounds

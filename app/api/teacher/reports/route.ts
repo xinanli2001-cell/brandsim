@@ -1,12 +1,16 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getCurrentTeacher } from "@/lib/auth/session";
+import { getCurrentUser } from "@/lib/auth/session";
+import { assertTeacher, AuthError } from "@/lib/auth/guards";
 import { toReports } from "@/lib/teacher/insights";
 
 export async function GET() {
-  const teacher = await getCurrentTeacher();
-  if (!teacher) {
-    return NextResponse.json({ error: "Not logged in" }, { status: 401 });
+  let teacher;
+  try {
+    teacher = assertTeacher(await getCurrentUser());
+  } catch (e) {
+    if (e instanceof AuthError) return NextResponse.json({ error: e.message }, { status: e.status });
+    throw e;
   }
 
   const challenges = await prisma.challenge.findMany({

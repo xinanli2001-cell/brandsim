@@ -27,11 +27,11 @@ export function TeacherShell({ children }: { children: React.ReactNode }) {
           return;
         }
         const data = await res.json();
-        if (data.role !== "teacher") {
+        if (data.user.role !== "teacher") {
           setStatus("unauthed");
           return;
         }
-        setEmail(data.teacher.email);
+        setEmail(data.user.email);
         setStatus("authed");
       })
       .catch(() => setStatus("unauthed"));

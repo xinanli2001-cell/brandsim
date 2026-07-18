@@ -7,7 +7,6 @@ import { createSession } from "@/lib/auth/session";
 const BodySchema = z.object({
   email: z.string().email(),
   password: z.string().min(8).max(200),
-  displayName: z.string().trim().min(1).max(40),
 });
 
 export async function POST(request: Request) {
@@ -21,24 +20,21 @@ export async function POST(request: Request) {
   const parsed = BodySchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
-      { error: "Please enter a valid email, a password with at least 8 characters, and a display name" },
+      { error: "Please enter a valid email and a password with at least 8 characters" },
       { status: 422 },
     );
   }
 
   const email = parsed.data.email.toLowerCase().trim();
-  const existing = await prisma.student.findUnique({ where: { email } });
+  const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
     return NextResponse.json({ error: "An account with this email already exists" }, { status: 409 });
   }
 
   const passwordHash = await bcrypt.hash(parsed.data.password, 10);
-  const student = await prisma.student.create({
-    data: { email, passwordHash, displayName: parsed.data.displayName },
-  });
-  await createSession({ studentId: student.id });
+  // 受控路径：role 硬编码 teacher。
+  const user = await prisma.user.create({ data: { email, passwordHash, role: "teacher" } });
+  await createSession(user.id);
 
-  return NextResponse.json({
-    student: { id: student.id, email: student.email, displayName: student.displayName },
-  });
+  return NextResponse.json({ user: { id: user.id, email: user.email, role: user.role } });
 }

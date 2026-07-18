@@ -1,10 +1,10 @@
-import type { Challenge, Group, Round, Student } from "@prisma/client";
+import type { Challenge, Group, Round, User } from "@prisma/client";
 import type { ActionKey, EvaluationResult } from "@/lib/types";
 
 const ACTIONS: ActionKey[] = ["boost", "ad", "audience", "influencer"];
 
 type GroupWithStudentRounds = Group & {
-  student: Student | null;
+  student: User | null;
   rounds: Round[];
   challenge?: Challenge;
 };

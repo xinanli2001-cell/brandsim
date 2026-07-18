@@ -26,12 +26,12 @@ export default function LoginPage() {
         mode === "login"
           ? "/api/auth/login"
           : role === "teacher"
-            ? "/api/auth/signup"
-            : "/api/auth/student/signup";
+            ? "/api/auth/teacher-signup"
+            : "/api/auth/signup";
 
       const body =
         mode === "login"
-          ? { role, email, password }
+          ? { email, password }
           : role === "teacher"
             ? { email, password }
             : { email, password, displayName };

@@ -47,11 +47,11 @@ export default function StudentPage() {
           return;
         }
         const data = await res.json();
-        if (data.role !== "student") {
+        if (data.user.role !== "student") {
           router.replace("/");
           return;
         }
-        setMe(data.student);
+        setMe(data.user);
         setAuthChecked(true);
         await loadChallenges();
       })

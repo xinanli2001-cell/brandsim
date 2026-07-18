@@ -22,7 +22,7 @@ export async function GET(
   }
 
   if (user.role === "teacher") {
-    if (challengeRow.teacherId !== user.teacher.id) {
+    if (challengeRow.teacherId !== user.id) {
       return NextResponse.json({ error: "Not authorized to view this leaderboard" }, { status: 403 });
     }
   } else {
@@ -33,7 +33,7 @@ export async function GET(
       );
     }
     const participant = await prisma.group.findFirst({
-      where: { challengeId, studentId: user.student.id },
+      where: { challengeId, studentId: user.id },
     });
     if (!participant) {
       return NextResponse.json({ error: "Not authorized to view this leaderboard" }, { status: 403 });

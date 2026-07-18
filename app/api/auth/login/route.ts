@@ -5,7 +5,6 @@ import { prisma } from "@/lib/db";
 import { createSession } from "@/lib/auth/session";
 
 const BodySchema = z.object({
-  role: z.enum(["teacher", "student"]),
   email: z.string().email(),
   password: z.string().min(1),
 });
@@ -24,24 +23,16 @@ export async function POST(request: Request) {
   }
 
   const email = parsed.data.email.toLowerCase().trim();
+  const user = await prisma.user.findUnique({ where: { email } });
   const genericError = NextResponse.json({ error: "Incorrect email or password" }, { status: 401 });
+  if (!user) return genericError;
 
-  if (parsed.data.role === "teacher") {
-    const teacher = await prisma.teacher.findUnique({ where: { email } });
-    if (!teacher) return genericError;
-    const valid = await bcrypt.compare(parsed.data.password, teacher.passwordHash);
-    if (!valid) return genericError;
-    await createSession({ teacherId: teacher.id });
-    return NextResponse.json({ role: "teacher", teacher: { id: teacher.id, email: teacher.email } });
-  }
-
-  const student = await prisma.student.findUnique({ where: { email } });
-  if (!student) return genericError;
-  const valid = await bcrypt.compare(parsed.data.password, student.passwordHash);
+  const valid = await bcrypt.compare(parsed.data.password, user.passwordHash);
   if (!valid) return genericError;
-  await createSession({ studentId: student.id });
+
+  await createSession(user.id);
+
   return NextResponse.json({
-    role: "student",
-    student: { id: student.id, email: student.email, displayName: student.displayName },
+    user: { id: user.id, email: user.email, role: user.role, displayName: user.displayName },
   });
 }

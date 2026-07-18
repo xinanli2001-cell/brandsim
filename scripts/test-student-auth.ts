@@ -33,7 +33,7 @@ async function main() {
   const displayName = "Auth Test Student";
 
   // 1. 学生注册
-  const signupRes = await fetch(`${BASE}/api/auth/student/signup`, {
+  const signupRes = await fetch(`${BASE}/api/auth/signup`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password, displayName }),
@@ -42,16 +42,29 @@ async function main() {
   check("Student signup succeeds", signupRes.status === 200, signup);
 
   // 2. 重复邮箱注册被拒
-  const dupRes = await fetch(`${BASE}/api/auth/student/signup`, {
+  const dupRes = await fetch(`${BASE}/api/auth/signup`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password, displayName }),
   });
   check("Duplicate email signup rejected with 409", dupRes.status === 409, await dupRes.json());
 
-  // 3. 用学生邮箱走老师登录角色应失败（没有同邮箱的 Teacher 行）
-  const wrongRole = await login("teacher", email, password);
-  check("Student credentials rejected for teacher-role login", wrongRole.res.status === 401);
+  // 3. 统一 User 模型下登录不再按 role 拒绝——账号的角色以数据库里的 role 为准，
+  // 老师专属接口才应该用 assertTeacher 拒绝学生账号，这里改验证这条链路。
+  const wrongRole = await login("student", email, password);
+  const wrongRoleTeacherAttempt = await fetch(`${BASE}/api/challenges`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Cookie: wrongRole.cookie ?? "",
+    },
+    body: JSON.stringify({}),
+  });
+  check(
+    "Student account is rejected by teacher-only endpoints",
+    wrongRoleTeacherAttempt.status === 403,
+    await wrongRoleTeacherAttempt.json().catch(() => null),
+  );
 
   // 4. 正常学生登录
   const { res: loginRes, cookie: studentCookie } = await login("student", email, password);
@@ -106,7 +119,7 @@ async function main() {
 
   // 9. 另一个学生用相同显示名 join 同一挑战，重名应自动加后缀
   const email2 = `student-${suffix}-b@example.com`;
-  await fetch(`${BASE}/api/auth/student/signup`, {
+  await fetch(`${BASE}/api/auth/signup`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email: email2, password, displayName }), // 相同 displayName，制造重名

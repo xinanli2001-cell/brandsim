@@ -29,7 +29,7 @@ async function loginTeacher(): Promise<string> {
 }
 
 async function loginStudent(email: string, displayName: string): Promise<string> {
-  await fetch(`${BASE}/api/auth/student/signup`, {
+  await fetch(`${BASE}/api/auth/signup`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password: "password123", displayName }),
@@ -113,24 +113,25 @@ async function main() {
     editedLocked,
   );
 
-  // 4b. 学生身份不能编辑/归档/删除这个挑战（应该 401，不是老师权限判断的 403）
+  // 4b. 学生身份不能编辑/归档/删除这个挑战（assertTeacher 统一鉴权下是 403：
+  // 已登录但角色不对，跟"完全没登录"的 401 语义上是两回事）。
   const studentEditRes = await fetch(`${BASE}/api/challenges/${challenge.id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json", Cookie: studentCookie },
     body: JSON.stringify(baseChallengePayload("Student Hijack Attempt")),
   });
-  check("A student session cannot edit a challenge (401)", studentEditRes.status === 401);
+  check("A student session cannot edit a challenge (403)", studentEditRes.status === 403);
   const studentArchiveRes = await fetch(`${BASE}/api/challenges/${challenge.id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json", Cookie: studentCookie },
     body: JSON.stringify({ archived: true }),
   });
-  check("A student session cannot archive a challenge (401)", studentArchiveRes.status === 401);
+  check("A student session cannot archive a challenge (403)", studentArchiveRes.status === 403);
   const studentDeleteRes = await fetch(`${BASE}/api/challenges/${challenge.id}`, {
     method: "DELETE",
     headers: { Cookie: studentCookie },
   });
-  check("A student session cannot delete a challenge (401)", studentDeleteRes.status === 401);
+  check("A student session cannot delete a challenge (403)", studentDeleteRes.status === 403);
 
   // 5. 归档：默认列表看不到，?archived=true 能看到
   const archiveRes = await fetch(`${BASE}/api/challenges/${challenge.id}`, {
@@ -183,7 +184,7 @@ async function main() {
 
   // 7. 另一个老师不能编辑/删除这个挑战
   const otherTeacherEmail = `mgmt-teacher-${suffix}@example.com`;
-  await fetch(`${BASE}/api/auth/signup`, {
+  await fetch(`${BASE}/api/auth/teacher-signup`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email: otherTeacherEmail, password: "password123" }),

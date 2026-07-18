@@ -10,7 +10,7 @@ async function login(role: "teacher" | "student", email: string, password: strin
   const res = await fetch(`${BASE}/api/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ role, email, password }),
+    body: JSON.stringify({ email, password }),
   });
   if (!res.ok) {
     throw new Error(`Failed to log in as ${role} (${email}) — did you run \`npm run db:seed\`?`);

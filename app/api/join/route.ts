@@ -4,7 +4,8 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { normalizeJoinCode } from "@/lib/join-code";
 import { uniqueGroupName } from "@/lib/data/group";
-import { getCurrentStudent } from "@/lib/auth/session";
+import { getCurrentUser } from "@/lib/auth/session";
+import { assertStudent, AuthError } from "@/lib/auth/guards";
 import { toChallenge, toGameState } from "@/lib/game-state";
 
 const BodySchema = z.object({
@@ -12,9 +13,12 @@ const BodySchema = z.object({
 });
 
 export async function POST(request: Request) {
-  const student = await getCurrentStudent();
-  if (!student) {
-    return NextResponse.json({ error: "Not logged in" }, { status: 401 });
+  let student;
+  try {
+    student = assertStudent(await getCurrentUser());
+  } catch (e) {
+    if (e instanceof AuthError) return NextResponse.json({ error: e.message }, { status: e.status });
+    throw e;
   }
 
   let body: unknown;
@@ -56,7 +60,7 @@ export async function POST(request: Request) {
       });
     }
   } else {
-    let groupName = await uniqueGroupName(challengeRow.id, student.displayName);
+    let groupName = await uniqueGroupName(challengeRow.id, student.displayName ?? student.email);
     for (let attempt = 0; attempt < 3 && !group; attempt++) {
       try {
         group = await prisma.group.create({
@@ -81,7 +85,7 @@ export async function POST(request: Request) {
             });
           } else {
             // groupName 撞车（另一个学生同时用了相同的重名后缀），重新生成后重试
-            groupName = await uniqueGroupName(challengeRow.id, student.displayName);
+            groupName = await uniqueGroupName(challengeRow.id, student.displayName ?? student.email);
           }
           continue;
         }
