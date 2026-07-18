@@ -59,14 +59,17 @@ export async function POST(request: Request) {
   return NextResponse.json({ challenge });
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   const teacher = await getCurrentTeacher();
   if (!teacher) {
     return NextResponse.json({ error: "Not logged in" }, { status: 401 });
   }
 
+  const url = new URL(request.url);
+  const showArchived = url.searchParams.get("archived") === "true";
+
   const challenges = await prisma.challenge.findMany({
-    where: { teacherId: teacher.id },
+    where: { teacherId: teacher.id, archivedAt: showArchived ? { not: null } : null },
     orderBy: { createdAt: "desc" },
     include: { _count: { select: { groups: true } } },
   });
@@ -81,6 +84,7 @@ export async function GET() {
       startingTokens: c.startingTokens,
       createdAt: c.createdAt,
       groupCount: c._count.groups,
+      archivedAt: c.archivedAt,
     })),
   });
 }
