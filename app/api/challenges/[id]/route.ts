@@ -158,10 +158,7 @@ export async function PUT(
     );
   }
 
-  const existing = await prisma.challenge.findUnique({
-    where: { id },
-    include: { _count: { select: { groups: true } } },
-  });
+  const existing = await prisma.challenge.findUnique({ where: { id } });
   if (!existing) {
     return NextResponse.json({ error: "Challenge not found" }, { status: 404 });
   }
@@ -171,19 +168,23 @@ export async function PUT(
 
   // 有学生加入过（groups 非空）时，回合数/初始代币/难度/可用动作/排行榜开关锁死，
   // 不管客户端传了什么都保留原值——服务端强制，不信任前端的禁用状态。
-  const hasStudents = existing._count.groups > 0;
-  const data = hasStudents
-    ? {
-        brandName: parsed.data.brandName,
-        brandBackground: parsed.data.brandBackground,
-        goal: parsed.data.goal,
-        targetAudience: parsed.data.targetAudience,
-        seasonalContext: parsed.data.seasonalContext,
-        followerBase: parsed.data.followerBase,
-      }
-    : parsed.data;
-
-  const challenge = await prisma.challenge.update({ where: { id }, data });
+  // group 数量在事务内重新统计，关闭"预检之后、落库之前"这段时间窗口的竞态
+  // （比如老师刚点保存的瞬间正好有学生加入）。
+  const challenge = await prisma.$transaction(async (tx) => {
+    const groupCount = await tx.group.count({ where: { challengeId: id } });
+    const hasStudents = groupCount > 0;
+    const data = hasStudents
+      ? {
+          brandName: parsed.data.brandName,
+          brandBackground: parsed.data.brandBackground,
+          goal: parsed.data.goal,
+          targetAudience: parsed.data.targetAudience,
+          seasonalContext: parsed.data.seasonalContext,
+          followerBase: parsed.data.followerBase,
+        }
+      : parsed.data;
+    return tx.challenge.update({ where: { id }, data });
+  });
 
   return NextResponse.json({
     challenge: {
