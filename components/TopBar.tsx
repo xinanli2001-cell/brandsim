@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { MaterialIcon } from "./MaterialIcon";
 
 export function TopBar({ tokenBalance }: { tokenBalance: number }) {
@@ -11,11 +12,20 @@ export function TopBar({ tokenBalance }: { tokenBalance: number }) {
           MarketingSim
         </span>
       </div>
-      <div className="flex items-center gap-1 bg-surface-container-high px-3 py-1 rounded-full shadow-sm">
-        <MaterialIcon name="monetization_on" fill className="text-token-gold text-lg" />
-        <span className="font-label-mono text-label-mono font-bold text-on-surface">
-          {tokenBalance.toLocaleString()} Tokens
-        </span>
+      <div className="flex items-center gap-3">
+        <Link
+          href="/plaza"
+          aria-label="Plaza"
+          className="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors"
+        >
+          <MaterialIcon name="public" className="text-lg" />
+        </Link>
+        <div className="flex items-center gap-1 bg-surface-container-high px-3 py-1 rounded-full shadow-sm">
+          <MaterialIcon name="monetization_on" fill className="text-token-gold text-lg" />
+          <span className="font-label-mono text-label-mono font-bold text-on-surface">
+            {tokenBalance.toLocaleString()} Tokens
+          </span>
+        </div>
       </div>
     </header>
   );

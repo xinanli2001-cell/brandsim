@@ -11,6 +11,8 @@ const NAV = [
   { href: "/teacher/new", icon: "settings_input_component", label: "Campaign Controls", enabled: true },
   { href: "/teacher/token-economy", icon: "database", label: "Token Economy", enabled: true },
   { href: "/teacher/reports", icon: "description", label: "Reports", enabled: true },
+  { href: "/plaza", icon: "forum", label: "Community", enabled: true },
+  { href: "/search", icon: "search", label: "Search", enabled: true },
 ];
 
 export function TeacherShell({ children }: { children: React.ReactNode }) {

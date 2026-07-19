@@ -110,13 +110,29 @@ export default function StudentPage() {
           </div>
           <span className="font-title-md text-title-md text-primary">{me.displayName}</span>
         </div>
-        <button
-          onClick={handleLogout}
-          className="flex items-center gap-2 text-on-surface-variant hover:text-error transition-colors"
-        >
-          <MaterialIcon name="logout" className="text-lg" />
-          <span className="font-body-main text-sm">Log out</span>
-        </button>
+        <div className="flex items-center gap-4">
+          <Link
+            href="/search"
+            className="flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors"
+          >
+            <MaterialIcon name="search" className="text-lg" />
+            <span className="font-body-main text-sm hidden sm:inline">Search</span>
+          </Link>
+          <Link
+            href="/plaza"
+            className="flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors"
+          >
+            <MaterialIcon name="forum" className="text-lg" />
+            <span className="font-body-main text-sm hidden sm:inline">Plaza</span>
+          </Link>
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-2 text-on-surface-variant hover:text-error transition-colors"
+          >
+            <MaterialIcon name="logout" className="text-lg" />
+            <span className="font-body-main text-sm">Log out</span>
+          </button>
+        </div>
       </header>
 
       <div className="max-w-container-max mx-auto px-gutter-mobile py-stack-lg flex flex-col gap-stack-lg">
