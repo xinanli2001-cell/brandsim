@@ -8,6 +8,12 @@ import { makeRng, clamp } from "./seed";
 
 const MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
 
+// GPT-5 系列与 o 系列推理模型只接受默认 temperature（传 0.7 会直接报错→静默退回 stub）。
+// 这类模型不传 temperature，其余模型保持 0.7 以维持反馈多样性。
+function supportsCustomTemperature(model: string): boolean {
+  return !/^(gpt-5|o\d)/i.test(model);
+}
+
 const JudgementSchema = z.object({
   qualityCoefficient: z.number().min(0.7).max(1.3),
   contentNotes: z.array(z.string()).max(4),
@@ -182,7 +188,7 @@ export async function judgeWithLlm(
 
     const resp = await client.chat.completions.create({
       model: MODEL,
-      temperature: 0.7,
+      ...(supportsCustomTemperature(MODEL) ? { temperature: 0.7 } : {}),
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: sys + "\nReturn a single JSON object with fields: qualityCoefficient, contentNotes[], feedback, visibleEngagement[]." },
