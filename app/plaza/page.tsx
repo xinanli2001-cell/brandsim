@@ -7,6 +7,7 @@ import type { PostDTO } from "@/lib/posts";
 
 export default function PlazaPage() {
   const [authed, setAuthed] = useState(false);
+  const [backHref, setBackHref] = useState("/");
   const [posts, setPosts] = useState<PostDTO[]>([]);
   const [text, setText] = useState("");
   const [hashtagsInput, setHashtagsInput] = useState("");
@@ -23,6 +24,10 @@ export default function PlazaPage() {
     (async () => {
       const res = await fetch("/api/auth/me");
       setAuthed(res.ok);
+      if (res.ok) {
+        const data = await res.json();
+        setBackHref(data.user.role === "teacher" ? "/teacher" : "/student");
+      }
       await loadPosts();
     })();
   }, []);
@@ -76,8 +81,8 @@ export default function PlazaPage() {
         >
           MarketingSim Plaza
         </Link>
-        <Link href="/join" className="font-caption text-caption text-secondary hover:underline">
-          Back to challenge
+        <Link href={backHref} className="font-caption text-caption text-secondary hover:underline">
+          Back
         </Link>
       </header>
 
@@ -111,7 +116,7 @@ export default function PlazaPage() {
           </form>
         ) : (
           <div className="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.04)] border border-[#E2E8F0] p-stack-md text-center">
-            <Link href="/login" className="font-body-main text-body-main text-secondary hover:underline">
+            <Link href="/" className="font-body-main text-body-main text-secondary hover:underline">
               Log in to post, like, and comment
             </Link>
           </div>

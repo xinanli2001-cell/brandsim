@@ -28,7 +28,7 @@ export default function StudentLoginPage() {
         setError(data.error ?? "Something went wrong");
         return;
       }
-      router.push("/join");
+      router.push("/student");
     } catch {
       setError("Network error, please try again");
     } finally {
@@ -99,7 +99,7 @@ export default function StudentLoginPage() {
             </button>
           </div>
           <div className="mt-stack-sm text-center">
-            <Link href="/teacher/login" className="font-caption text-caption text-on-surface-variant hover:underline">
+            <Link href="/" className="font-caption text-caption text-on-surface-variant hover:underline">
               Teacher Login
             </Link>
           </div>
