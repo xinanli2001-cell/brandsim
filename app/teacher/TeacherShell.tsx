@@ -56,6 +56,12 @@ export function TeacherShell({ children }: { children: React.ReactNode }) {
     );
   }
 
+  // 多个 NAV 项的 href 可能同时是当前路径的前缀（比如 "/teacher" 是所有子页面的前缀），
+  // 只让匹配最精确（最长）的那一个高亮，而不是每个前缀匹配都点亮。
+  const activeHref = NAV.filter(
+    (item) => item.enabled && (pathname === item.href || pathname.startsWith(item.href + "/")),
+  ).sort((a, b) => b.href.length - a.href.length)[0]?.href;
+
   return (
     <div className="min-h-screen md:flex font-body-main text-on-surface">
       <nav className="hidden md:flex flex-col py-stack-lg w-72 border-r border-outline-variant bg-surface-container-low sticky top-0 h-screen shrink-0">
@@ -70,7 +76,7 @@ export function TeacherShell({ children }: { children: React.ReactNode }) {
         </div>
         <ul className="flex-1 flex flex-col gap-2">
           {NAV.map((item) => {
-            const active = item.enabled && (pathname === item.href || pathname.startsWith(item.href + "/"));
+            const active = item.enabled && item.href === activeHref;
             return (
               <li key={item.label}>
                 {item.enabled ? (
