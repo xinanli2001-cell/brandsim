@@ -44,6 +44,10 @@ yarn-error.log*
 # superpowers scratch (progress ledger, scratch workspace)
 .superpowers/
 
+# unrelated nested worktrees (accidentally tracked as an orphan gitlink once,
+# with no matching .gitmodules entry - see docs/handoff-codex.md)
+.claude/worktrees/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
