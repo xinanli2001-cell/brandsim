@@ -15,19 +15,17 @@ function supportsCustomTemperature(model: string): boolean {
 }
 
 const JudgementSchema = z.object({
-  qualityCoefficient: z.number().min(0.7).max(1.3),
-  contentNotes: z.array(z.string()).max(4),
+  // 越界系数在此 clamp（而非抛错），避免结构外的取值触发静默退回 stub
+  qualityCoefficient: z.number().transform((n) => clamp(n, 0.7, 1.3)),
   feedback: z.string(),
-  visibleEngagement: z
-    .array(
-      z.object({
-        user: z.string(),
-        type: z.enum(["comment", "like", "emoji"]),
-        text: z.string().optional(),
-        likes: z.number().optional(),
-      }),
-    )
-    .max(11),
+  visibleEngagement: z.array(
+    z.object({
+      user: z.string(),
+      type: z.enum(["comment", "like", "emoji"]),
+      text: z.string().nullish().transform((v) => v ?? undefined),
+      likes: z.number().nullish().transform((v) => v ?? undefined),
+    }),
+  ),
 });
 
 const NAMES = [
@@ -132,12 +130,6 @@ export function stubJudgement(
 
   return {
     qualityCoefficient: Number(q.toFixed(2)),
-    contentNotes: [
-      audienceHits > 0 ? "Audience targeting is reflected in the post" : "Audience fit is too generic",
-      hasCta ? "CTA is clear enough to support clicks" : "Missing a clear CTA",
-      timing > 0 && brandSeasonHit ? "Timing, brand tone, and seasonal context are aligned" : "Timing or brand-season fit could be sharper",
-      lenOk ? "Copy length is easy to scan" : "Copy length could be improved",
-    ],
     feedback: [
       hasCta
         ? "The post gives students a clear next step and keeps the message focused."
@@ -171,9 +163,8 @@ export async function judgeWithLlm(
       "Respond strictly as JSON. Never invent numeric metrics (impressions/reach etc. are computed by external rules); only output the requested fields. " +
       "Judge ONLY the copy's writing quality — the things the game's rules cannot measure. Reason internally across: how well the copy speaks to the target audience, clarity and readability, strength and phrasing of the call-to-action, brand voice/tone fit, and creativity/hook. Do not reveal these dimension scores or any hidden rubric. " +
       "IMPORTANT: posting time, hashtag count, image, seasonal timing, and the paid actions (boost/ad/targeting/influencer) are each scored SEPARATELY by the game's rules — they must NOT influence qualityCoefficient. They are shown to you only as context for your written feedback; never let them move the score. " +
-      "qualityCoefficient reflects the copy's writing quality ONLY, range 0.7-1.3. Calibrate: 0.70-0.85 = weak, off-brand, or missing a clear CTA; 0.90-1.05 = solid but unremarkable; 1.10-1.30 = sharp, on-audience, strong hook and CTA. Reserve the extremes; most competent posts land near 1.0. " +
+      "qualityCoefficient reflects the copy's writing quality ONLY, range 0.7-1.3. Calibrate: 0.70-0.85 = weak, off-brand, or missing a clear CTA; 0.90-1.05 = solid but unremarkable; 1.10-1.30 = sharp, on-audience, strong hook and CTA. Use the FULL range and spread scores across it — a genuinely sharp post should score high and a weak one low; do not cluster around 1.0. " +
       "feedback: 2-4 sentences written to the student — specific and constructive, naming 1-2 concrete strengths and 1-2 concrete improvements tied to the actual copy; honest but encouraging. " +
-      "contentNotes: up to 4 short observations. " +
       "visibleEngagement: 7-11 entries using natural-sounding real names — never labels like 'User1'. " +
       "Respond in English.";
     const user = [
@@ -196,9 +187,38 @@ export async function judgeWithLlm(
     const resp = await client.chat.completions.create({
       model: MODEL,
       ...(supportsCustomTemperature(MODEL) ? { temperature: 0.7 } : {}),
-      response_format: { type: "json_object" },
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "post_judgement",
+          strict: true,
+          schema: {
+            type: "object",
+            additionalProperties: false,
+            required: ["qualityCoefficient", "feedback", "visibleEngagement"],
+            properties: {
+              qualityCoefficient: { type: "number", description: "Copy writing quality only, 0.7 to 1.3" },
+              feedback: { type: "string" },
+              visibleEngagement: {
+                type: "array",
+                items: {
+                  type: "object",
+                  additionalProperties: false,
+                  required: ["user", "type", "text", "likes"],
+                  properties: {
+                    user: { type: "string" },
+                    type: { type: "string", enum: ["comment", "like", "emoji"] },
+                    text: { type: ["string", "null"] },
+                    likes: { type: ["integer", "null"] },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
       messages: [
-        { role: "system", content: sys + "\nReturn a single JSON object with fields: qualityCoefficient, contentNotes[], feedback, visibleEngagement[]." },
+        { role: "system", content: sys + "\nReturn one JSON object with fields: qualityCoefficient, feedback, visibleEngagement[]." },
         { role: "user", content: user },
       ],
     });

@@ -99,12 +99,11 @@ check(
   { weak: weak.qualityCoefficient, strong: strong.qualityCoefficient },
 );
 check(
-  "Rubric feedback mentions multiple internal scoring dimensions without exposing numeric sub-scores",
-  strong.contentNotes.some((note) => /audience|target/i.test(note)) &&
-    strong.contentNotes.some((note) => /CTA|call to action/i.test(note)) &&
-    strong.contentNotes.some((note) => /timing|season|brand/i.test(note)) &&
-    !strong.feedback.includes("/10"),
-  strong,
+  "Feedback is substantive and does not expose numeric sub-scores or a hidden rubric",
+  strong.feedback.length > 40 &&
+    !strong.feedback.includes("/10") &&
+    !/qualitycoefficient/i.test(strong.feedback),
+  strong.feedback,
 );
 check(
   "Previous performance informs feedback",

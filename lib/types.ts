@@ -114,7 +114,6 @@ export interface LeaderboardEntry {
 // LLM 层只负责这几个软性字段，数值量级不经手 LLM
 export interface LlmJudgement {
   qualityCoefficient: number; // 0.7..1.3
-  contentNotes: string[];
   feedback: string;
   visibleEngagement: EvaluationResult["visibleEngagement"];
 }
